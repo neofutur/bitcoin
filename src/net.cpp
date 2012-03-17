@@ -13,6 +13,7 @@
 #ifdef WIN32
 #include <string.h>
 #endif
+#undef USE_UPNP
 
 #ifdef USE_UPNP
 #include <miniupnpc/miniwget.h>

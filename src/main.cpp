@@ -1842,6 +1842,7 @@ static unsigned int nCurrentBlockFile = 1;
 FILE* AppendBlockFile(unsigned int& nFileRet)
 {
 	//ww7 ReadOnly option here
+    int readonlychain=1;
 
     nFileRet = 0;
     loop
@@ -1851,6 +1852,8 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
             return NULL;
         if (fseek(file, 0, SEEK_END) != 0)
             return NULL;
+	if ( readonlychain == 1 )
+	   return file;
 	 //ww7 one more reason to need light clients and blockchain providers
         // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
         if (ftell(file) < 0x7F000000 - MAX_SIZE)
@@ -1865,6 +1868,8 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
 
 bool LoadBlockIndex(bool fAllowNew)
 {
+    int readonlychain=1;
+
     if (fTestNet)
     {
         hashGenesisBlock = uint256("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008");
@@ -1935,10 +1940,15 @@ bool LoadBlockIndex(bool fAllowNew)
         // Start new block file
         unsigned int nFile;
         unsigned int nBlockPos;
+	readonlychain=1;
+
+	if ( readonlychain != 1)
+	{
         if (!block.WriteToDisk(nFile, nBlockPos))
             return error("LoadBlockIndex() : writing genesis block to disk failed");
         if (!block.AddToBlockIndex(nFile, nBlockPos))
             return error("LoadBlockIndex() : genesis block not accepted");
+	}
     }
 
     return true;

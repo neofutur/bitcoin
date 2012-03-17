@@ -2,11 +2,12 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-USE_UPNP:=0
+#USE_UPNP=0
+#undef USE_UPNP
 
 DEFS=-DNOPCH
 
-DEFS += $(addprefix -I,$(CURDIR) $(BOOST_INCLUDE_PATH) $(BDB_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
+DEFS += $(addprefix -I, /usr/include/db4.8/ $(CURDIR) $(BOOST_INCLUDE_PATH) $(BDB_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
 LIBS = $(addprefix -L,$(BOOST_LIB_PATH) $(BDB_LIB_PATH) $(OPENSSL_LIB_PATH))
 
 LMODE = dynamic
@@ -34,10 +35,10 @@ LIBS += \
 ifndef USE_UPNP
 	override USE_UPNP = -
 endif
-ifneq (${USE_UPNP}, -)
-	LIBS += -l miniupnpc
-	DEFS += -DUSE_UPNP=$(USE_UPNP)
-endif
+#ifneq (${USE_UPNP}, -)
+#	LIBS += -l miniupnpc
+#	DEFS += -DUSE_UPNP=$(USE_UPNP)
+#endif
 
 ifneq (${USE_SSL}, 0)
 	DEFS += -DUSE_SSL

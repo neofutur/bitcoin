@@ -951,7 +951,9 @@ public:
     bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     {
         //ww7 ReadOnly Option here
-	
+	int readonlychain=1;
+	if ( readonlychain == 1 ) return true;
+
 	// Open history file to append
         CAutoFile fileout = AppendBlockFile(nFileRet);
         if (!fileout)
