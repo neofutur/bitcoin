@@ -1841,6 +1841,8 @@ static unsigned int nCurrentBlockFile = 1;
 
 FILE* AppendBlockFile(unsigned int& nFileRet)
 {
+	//ww7 ReadOnly option here
+
     nFileRet = 0;
     loop
     {
@@ -1849,6 +1851,7 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
             return NULL;
         if (fseek(file, 0, SEEK_END) != 0)
             return NULL;
+	 //ww7 one more reason to need light clients and blockchain providers
         // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
         if (ftell(file) < 0x7F000000 - MAX_SIZE)
         {
@@ -1927,6 +1930,8 @@ bool LoadBlockIndex(bool fAllowNew)
         block.print();
         assert(block.GetHash() == hashGenesisBlock);
 
+	//ww7 ReadOnly option here
+	
         // Start new block file
         unsigned int nFile;
         unsigned int nBlockPos;

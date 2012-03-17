@@ -950,7 +950,9 @@ public:
 
     bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     {
-        // Open history file to append
+        //ww7 ReadOnly Option here
+	
+	// Open history file to append
         CAutoFile fileout = AppendBlockFile(nFileRet);
         if (!fileout)
             return error("CBlock::WriteToDisk() : AppendBlockFile failed");
