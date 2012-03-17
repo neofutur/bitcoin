@@ -51,6 +51,8 @@ typedef unsigned long long  uint64;
 class CScript;
 class CDataStream;
 class CAutoFile;
+
+//ww7 max filesize for blockchain 
 static const unsigned int MAX_SIZE = 0x02000000;
 
 static const int PROTOCOL_VERSION = 60000;
