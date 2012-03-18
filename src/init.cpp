@@ -186,6 +186,7 @@ bool AppInit2(int argc, char* argv[])
             "  -connect=<ip>    \t\t  " + _("Connect only to the specified node") + "\n" +
             "  -irc             \t  "   + _("Find peers using internet relay chat (default: 0)") + "\n" +
             "  -listen          \t  "   + _("Accept connections from outside (default: 1)") + "\n" +
+            "  -edonlyblockchain          \t  "   + _("wont read the blockchain files, only read them (default: 0)") + "\n" +
 #ifdef QT_GUI
             "  -lang=<lang>     \t\t  " + _("Set language, for example \"de_DE\" (default: system locale)") + "\n" +
 #endif
@@ -347,6 +348,9 @@ bool AppInit2(int argc, char* argv[])
     if (!LoadAddresses())
         strErrors << _("Error loading addr.dat") << "\n";
     printf(" addresses   %15"PRI64d"ms\n", GetTimeMillis() - nStart);
+
+    InitMessage(_(" reached Loading block index\n"));
+    printf(" reached Loading block index\n");
 
     InitMessage(_("Loading block index..."));
     printf("Loading block index...\n");

@@ -595,8 +595,15 @@ public:
 
     bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
     {
-        CAutoFile filein = OpenBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb");
-        if (!filein)
+        int readonlychain=1;
+	CAutoFile filein = NULL;
+
+	if ( readonlychain == 1 )
+	 filein = OpenBlockFile(pos.nFile, 0, pfileRet ? "ro" : "ro");
+	else
+         filein = OpenBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb");
+        
+	if (!filein)
             return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
 
         // Read transaction
@@ -952,7 +959,7 @@ public:
     {
         //ww7 ReadOnly Option here
 	int readonlychain=1;
-	if ( readonlychain == 1 ) return true;
+	//if ( readonlychain == 1 ) return true;
 
 	// Open history file to append
         CAutoFile fileout = AppendBlockFile(nFileRet);
@@ -985,10 +992,15 @@ public:
 
     bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true)
     {
-        SetNull();
+        int readonlychain=1;
+	CAutoFile filein = NULL;
 
+        SetNull();
+        if ( readonlychain == 1 )
+	 filein = OpenBlockFile(nFile, nBlockPos, "ro");
         // Open history file to read
-        CAutoFile filein = OpenBlockFile(nFile, nBlockPos, "rb");
+	else
+         filein = OpenBlockFile(nFile, nBlockPos, "rb");
         if (!filein)
             return error("CBlock::ReadFromDisk() : OpenBlockFile failed");
         if (!fReadTransactions)
@@ -1149,6 +1161,11 @@ public:
 
     bool EraseBlockFromDisk()
     {
+        int readonlychain=1;
+
+	if ( readonlychain == 1 )
+	 return true;
+
         // Open history file
         CAutoFile fileout = OpenBlockFile(nFile, nBlockPos, "rb+");
         if (!fileout)

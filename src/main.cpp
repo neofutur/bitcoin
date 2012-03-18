@@ -1821,9 +1821,15 @@ bool CheckDiskSpace(uint64 nAdditionalBytes)
 
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode)
 {
+    int readonlychain=1;
+    FILE* file = NULL;
+
     if (nFile == -1)
         return NULL;
-    FILE* file = fopen(strprintf("%s/blk%04d.dat", GetDataDir().c_str(), nFile).c_str(), pszMode);
+    if (  readonlychain == 1 )
+        file = fopen(strprintf("%s/blk%04d.dat", GetDataDir().c_str(), nFile).c_str(), pszMode);
+    else
+        file = fopen(strprintf("%s/blk%04d.dat", GetDataDir().c_str(), nFile).c_str(), pszMode);
     if (!file)
         return NULL;
     if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w'))
@@ -1843,17 +1849,22 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
 {
 	//ww7 ReadOnly option here
     int readonlychain=1;
+    FILE* file = NULL;
 
     nFileRet = 0;
     loop
     {
-        FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+        if ( readonlychain == 1 )
+	 file = OpenBlockFile(nCurrentBlockFile, 0, "ro");
+	else
+         file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+
         if (!file)
             return NULL;
         if (fseek(file, 0, SEEK_END) != 0)
             return NULL;
-	if ( readonlychain == 1 )
-	   return file;
+	//if ( readonlychain == 1 )
+	//   return file;
 	 //ww7 one more reason to need light clients and blockchain providers
         // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
         if (ftell(file) < 0x7F000000 - MAX_SIZE)
@@ -2711,8 +2722,8 @@ bool ProcessMessages(CNode* pfrom)
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
         return true;
-    //if (fDebug)
-    //    printf("ProcessMessages(%u bytes)\n", vRecv.size());
+    if (fDebug)
+        printf("ProcessMessages(%u bytes)\n", vRecv.size());
 
     //
     // Message format

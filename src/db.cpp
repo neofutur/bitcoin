@@ -63,14 +63,22 @@ instance_of_cdbinit;
 CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
 {
     int ret;
+    int readonlychain=1;
+
     if (pszFile == NULL)
         return;
+    printf("pszmode = %s\n",pszMode);
+
+    if ( readonlychain == 1 )
+     pszMode = "r";
+    printf("pszmode = %s\n",pszMode);
 
     fReadOnly = (!strchr(pszMode, '+') && !strchr(pszMode, 'w'));
     bool fCreate = strchr(pszMode, 'c');
     unsigned int nFlags = DB_THREAD;
     if (fCreate)
         nFlags |= DB_CREATE;
+    if ( readonlychain == 1 ) nFlags |= DB_RDONLY;
 
     CRITICAL_BLOCK(cs_db)
     {
@@ -90,6 +98,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
             dbenv.set_lk_max_objects(10000);
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
+	    printf("strDataDir.c_str() = %s\n",strDataDir.c_str() );
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
                              DB_INIT_LOCK  |
@@ -101,23 +110,29 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
                              S_IRUSR | S_IWUSR);
             if (ret > 0)
                 throw runtime_error(strprintf("CDB() : error %d opening database environment", ret));
+	    printf("after ret\n");
+
             fDbEnvInit = true;
         }
 
         strFile = pszFile;
         ++mapFileUseCount[strFile];
         pdb = mapDb[strFile];
+	printf("strFile=\n" );
+
         if (pdb == NULL)
         {
+	    printf("pdb NULL\n");
             pdb = new Db(&dbenv, 0);
-
+	    printf(" ater new db\n");
+            printf("pszFile = %s\n",pszFile ); // pszFile = blkindex.dat
             ret = pdb->open(NULL,      // Txn pointer
                             pszFile,   // Filename
                             "main",    // Logical db name
                             DB_BTREE,  // Database type
                             nFlags,    // Flags
                             0);
-
+            printf(" ater pdb->open\n");
             if (ret > 0)
             {
                 delete pdb;
@@ -332,25 +347,34 @@ bool CTxDB::ReadTxIndex(uint256 hash, CTxIndex& txindex)
 bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
 {
     assert(!fClient);
-    return Write(make_pair(string("tx"), hash), txindex);
+    int readonlychain=1;
+    if ( readonlychain == 1 )
+     return true;
+    else
+     return Write(make_pair(string("tx"), hash), txindex);
 }
 
 bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight)
 {
+    int readonlychain=1;
     assert(!fClient);
 
     // Add to tx index
     uint256 hash = tx.GetHash();
     CTxIndex txindex(pos, tx.vout.size());
-    return Write(make_pair(string("tx"), hash), txindex);
+    if ( readonlychain == 1 )
+     return true;
+    else
+     return Write(make_pair(string("tx"), hash), txindex);
 }
 
 bool CTxDB::EraseTxIndex(const CTransaction& tx)
 {
+    int readonlychain=1;
     assert(!fClient);
     uint256 hash = tx.GetHash();
-
-    return Erase(make_pair(string("tx"), hash));
+    if ( readonlychain == 1 ) return true;
+    else return Erase(make_pair(string("tx"), hash));
 }
 
 bool CTxDB::ContainsTx(uint256 hash)
@@ -441,12 +465,16 @@ bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 
 bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
 {
-    return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
+    int readonlychain=1;
+    if ( readonlychain == 1 ) return true;
+    else return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
 }
 
 bool CTxDB::EraseBlockIndex(uint256 hash)
 {
-    return Erase(make_pair(string("blockindex"), hash));
+    int readonlychain=1;
+    if ( readonlychain == 1 ) return true;
+    else return Erase(make_pair(string("blockindex"), hash));
 }
 
 bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
@@ -456,7 +484,9 @@ bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
 
 bool CTxDB::WriteHashBestChain(uint256 hashBestChain)
 {
-    return Write(string("hashBestChain"), hashBestChain);
+    int readonlychain=1;
+    if ( readonlychain == 1 ) return true;
+    else return Write(string("hashBestChain"), hashBestChain);
 }
 
 bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
@@ -466,11 +496,16 @@ bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
 
 bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
 {
-    return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
+    int readonlychain=1;
+    if ( readonlychain == 1 ) return true;
+    else return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
 }
 
 CBlockIndex static * InsertBlockIndex(uint256 hash)
 {
+    int readonlychain=1;
+    if ( readonlychain == 1 ) return NULL;
+
     if (hash == 0)
         return NULL;
 
@@ -491,10 +526,14 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 
 bool CTxDB::LoadBlockIndex()
 {
+    int readonlychain=1;
+    
+    //printf("before GetCursor");
     // Get database cursor
     Dbc* pcursor = GetCursor();
     if (!pcursor)
         return false;
+    //printf("after GetCursor");
 
     // Load mapBlockIndex
     unsigned int fFlags = DB_SET_RANGE;
@@ -517,13 +556,21 @@ bool CTxDB::LoadBlockIndex()
         ssKey >> strType;
         if (strType == "blockindex")
         {
+
             CDiskBlockIndex diskindex;
             ssValue >> diskindex;
 
             // Construct block index object
             CBlockIndex* pindexNew = InsertBlockIndex(diskindex.GetBlockHash());
-            pindexNew->pprev          = InsertBlockIndex(diskindex.hashPrev);
-            pindexNew->pnext          = InsertBlockIndex(diskindex.hashNext);
+	    if ( readonlychain == 1 )
+	    {
+	    // pindexNew->pprev          = NULL;
+	    // pindexNew->pnext 	      = NULL;
+	    }
+	    else
+	    {
+             pindexNew->pprev          = InsertBlockIndex(diskindex.hashPrev);
+             pindexNew->pnext          = InsertBlockIndex(diskindex.hashNext);
             pindexNew->nFile          = diskindex.nFile;
             pindexNew->nBlockPos      = diskindex.nBlockPos;
             pindexNew->nHeight        = diskindex.nHeight;
@@ -539,13 +586,16 @@ bool CTxDB::LoadBlockIndex()
 
             if (!pindexNew->CheckIndex())
                 return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
+	    }
         }
         else
         {
             break;
         }
     }
+	     printf("in strType == blockindex\n");
     pcursor->close();
+	    printf("BIS in strType == blockindex\n");
 
     // Calculate bnChainWork
     vector<pair<int, CBlockIndex*> > vSortedByHeight;
@@ -604,7 +654,7 @@ bool CTxDB::LoadBlockIndex()
         CTxDB txdb;
         block.SetBestChain(txdb, pindexFork);
     }
-
+    printf(" end LoadBlockIndex\n");
     return true;
 }
 
@@ -628,6 +678,8 @@ bool CAddrDB::EraseAddress(const CAddress& addr)
 
 bool CAddrDB::LoadAddresses()
 {
+        printf("In LoadAddresses\n");
+
     CRITICAL_BLOCK(cs_mapAddresses)
     {
         // Get cursor
